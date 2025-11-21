@@ -29,17 +29,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     },
   }));
 
-  // OAuth2 callback endpoint
-  app.post("/api/auth/callback", async (req, res) => {
+  // OAuth2 callback endpoint - both GET and POST
+  // GET: Direct browser redirect from Discord
+  // POST: From frontend callback handler
+  const handleOAuthCallback = async (req: any, res: any, code: string, redirectUriPath: string) => {
     try {
-      const { code } = req.body;
-
       if (!code) {
-        return res.status(400).send("Missing authorization code");
+        return res.status(400).json({ error: "Missing authorization code" });
       }
 
-      // Exchange code for tokens
-      const redirectUri = `${req.protocol}://${req.get('host')}/auth/callback`;
+      // Generate redirect URI - must match Discord OAuth app settings exactly
+      let redirectUri: string;
+      if (process.env.NODE_ENV === 'production') {
+        redirectUri = `${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/auth/callback`;
+      } else {
+        redirectUri = `http://localhost:5000/auth/callback`;
+      }
+
+      console.log(`[OAuth] Exchanging code for tokens, redirect_uri: ${redirectUri}`);
+
       const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
         method: 'POST',
         headers: {
@@ -56,9 +64,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!tokenResponse.ok) {
-        const error = await tokenResponse.text();
-        console.error('Token exchange failed:', error);
-        return res.status(400).send('Failed to exchange authorization code');
+        const errorData = await tokenResponse.text();
+        console.error('[OAuth] Token exchange failed:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          body: errorData,
+          redirectUri,
+        });
+        return res.status(400).json({ 
+          error: 'Failed to exchange authorization code',
+          details: errorData 
+        });
       }
 
       const tokenData = await tokenResponse.json();
@@ -94,10 +110,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Store user in session
       (req.session as any).discordUserId = userData.id;
 
+      console.log(`[OAuth] Successfully authorized user ${userData.username} (${userData.id})`);
       res.json({ success: true, user: userData });
     } catch (error) {
-      console.error('OAuth callback error:', error);
-      res.status(500).send('Internal server error');
+      console.error('[OAuth] Callback error:', error);
+      res.status(500).json({ error: 'Internal server error', details: String(error) });
+    }
+  };
+
+  // POST endpoint for OAuth callback (from frontend)
+  app.post("/api/auth/callback", async (req, res) => {
+    const { code } = req.body;
+    await handleOAuthCallback(req, res, code, '/auth/callback');
+  });
+
+  // GET endpoint for OAuth callback (direct from Discord)
+  app.get("/auth/callback", async (req, res) => {
+    const { code, state } = req.query as { code?: string; state?: string };
+    
+    if (!code) {
+      return res.status(400).send('Missing authorization code from Discord');
+    }
+
+    try {
+      // Exchange code for tokens
+      let redirectUri: string;
+      if (process.env.NODE_ENV === 'production') {
+        redirectUri = `${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/auth/callback`;
+      } else {
+        redirectUri = `http://localhost:5000/auth/callback`;
+      }
+
+      console.log(`[OAuth] GET callback, redirect_uri: ${redirectUri}`);
+
+      const tokenResponse = await fetch('https://discord.com/api/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: process.env.DISCORD_CLIENT_ID!,
+          client_secret: process.env.DISCORD_CLIENT_SECRET!,
+          code: code,
+          grant_type: 'authorization_code',
+          redirect_uri: redirectUri,
+          scope: 'identify guilds.join',
+        }),
+      });
+
+      if (!tokenResponse.ok) {
+        const errorData = await tokenResponse.text();
+        console.error('[OAuth] Token exchange failed:', {
+          status: tokenResponse.status,
+          statusText: tokenResponse.statusText,
+          body: errorData,
+          redirectUri,
+        });
+        return res.status(400).send(`Authorization failed: ${errorData}`);
+      }
+
+      const tokenData = await tokenResponse.json();
+
+      // Get user info
+      const userResponse = await fetch('https://discord.com/api/users/@me', {
+        headers: {
+          Authorization: `Bearer ${tokenData.access_token}`,
+        },
+      });
+
+      if (!userResponse.ok) {
+        return res.status(400).send('Failed to fetch user info');
+      }
+
+      const userData = await userResponse.json();
+
+      // Calculate expiration time
+      const expiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
+
+      // Store OAuth token
+      await storage.upsertOauthToken({
+        discordUserId: userData.id,
+        username: userData.username,
+        discriminator: userData.discriminator || '0',
+        avatar: userData.avatar,
+        accessToken: tokenData.access_token,
+        refreshToken: tokenData.refresh_token,
+        expiresAt: expiresAt,
+        scopes: tokenData.scope,
+      });
+
+      // Store user in session
+      (req.session as any).discordUserId = userData.id;
+
+      console.log(`[OAuth] Successfully authorized user ${userData.username} (${userData.id})`);
+
+      // Redirect to dashboard
+      res.redirect('/dashboard?authorized=true');
+    } catch (error) {
+      console.error('[OAuth] GET callback error:', error);
+      res.status(500).send('Internal server error: ' + String(error));
     }
   });
 
@@ -328,7 +439,7 @@ async function performTransfer(
         const result: TransferMemberResult = {
           userId: memberToken.discordUserId,
           username: memberToken.username,
-          discriminator: memberToken.discriminator,
+          discriminator: memberToken.discriminator || '0',
           status: 'failed',
           reason: 'OAuth token expired',
         };
@@ -347,7 +458,7 @@ async function performTransfer(
       const result: TransferMemberResult = {
         userId: memberToken.discordUserId,
         username: memberToken.username,
-        discriminator: memberToken.discriminator,
+        discriminator: memberToken.discriminator || '0',
         status: addResult.success ? 'success' : (addResult.reason === 'Already in server' ? 'skipped' : 'failed'),
         reason: addResult.reason,
       };

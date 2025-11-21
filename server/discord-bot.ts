@@ -19,6 +19,9 @@ export const discordClient = new Client({
 // Register slash commands
 const commands = [
   new SlashCommandBuilder()
+    .setName('authorize')
+    .setDescription('Get the authorization link to authorize this bot for member transfers'),
+  new SlashCommandBuilder()
     .setName('server')
     .setDescription('Transfer members from current server to target server')
     .addStringOption(option =>
@@ -53,7 +56,9 @@ export async function initializeBot() {
     discordClient.on('interactionCreate', async (interaction) => {
       if (!interaction.isChatInputCommand()) return;
 
-      if (interaction.commandName === 'server') {
+      if (interaction.commandName === 'authorize') {
+        await handleAuthorizeCommand(interaction);
+      } else if (interaction.commandName === 'server') {
         await handleServerCommand(interaction);
       }
     });
@@ -63,6 +68,36 @@ export async function initializeBot() {
   } catch (error) {
     console.error('Error initializing Discord bot:', error);
     throw error;
+  }
+}
+
+// Handle /authorize command
+async function handleAuthorizeCommand(interaction: ChatInputCommandInteraction) {
+  try {
+    // Generate OAuth URL - use localhost for dev, production domain for prod
+    let baseUrl = 'http://localhost:5000';
+    if (process.env.NODE_ENV === 'production') {
+      // Use the production domain from environment or default
+      baseUrl = process.env.BASE_URL || 'https://your-domain.repl.co';
+    }
+
+    const authUrl = new URL('https://discord.com/api/oauth2/authorize');
+    authUrl.searchParams.set('client_id', process.env.DISCORD_CLIENT_ID!);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', 'identify guilds.join');
+    authUrl.searchParams.set('redirect_uri', `${baseUrl}/auth/callback`);
+    authUrl.searchParams.set('prompt', 'consent');
+
+    await interaction.reply({
+      content: `✅ **Authorize the bot to transfer members**\n\nClick the button below to authorize with Discord. This grants the bot permission to add you to other servers you authorize.\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error('Error handling authorize command:', error);
+    await interaction.reply({
+      content: '❌ An error occurred. Please try again later.',
+      ephemeral: true,
+    });
   }
 }
 
