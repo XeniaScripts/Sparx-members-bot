@@ -202,6 +202,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get OAuth configuration for frontend
+  app.get("/api/oauth/config", async (req, res) => {
+    res.json({
+      clientId: process.env.DISCORD_CLIENT_ID,
+    });
+  });
+
   // Get current user info
   app.get("/api/user", async (req, res) => {
     try {

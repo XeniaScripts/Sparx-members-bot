@@ -5,12 +5,19 @@ import { ArrowRight, Shield, Zap, Users, CheckCircle2 } from "lucide-react";
 import { SiDiscord } from "react-icons/si";
 
 export default function Home() {
-  const handleAuthorize = () => {
-    const clientId = import.meta.env.VITE_DISCORD_CLIENT_ID;
-    const redirectUri = `${window.location.origin}/api/auth/callback`;
-    const scopes = 'identify guilds.join';
-    const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}`;
-    window.location.href = authUrl;
+  const handleAuthorize = async () => {
+    try {
+      const response = await fetch('/api/oauth/config');
+      const config = await response.json();
+      
+      const redirectUri = `${window.location.origin}/auth/callback`;
+      const scopes = 'identify guilds.join';
+      const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}`;
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('Failed to get OAuth config:', error);
+      alert('Failed to initialize authorization. Please try again.');
+    }
   };
 
   return (
