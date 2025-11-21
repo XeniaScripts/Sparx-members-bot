@@ -106,10 +106,19 @@ async function handleAuthorizeCommand(interaction: ChatInputCommandInteraction) 
     
     console.log(`[Discord] Generated auth URL with redirect_uri: ${redirectUri}`);
 
-    await interaction.reply({
-      content: `✅ **Authorize the bot to transfer members**\n\nClick the button below to authorize with Discord. This grants the bot permission to add you to other servers you authorize.\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
-      ephemeral: true,
-    });
+    // Check if user is already authorized
+    const existingToken = await storage.getOauthToken(interaction.user.id);
+    if (existingToken) {
+      await interaction.reply({
+        content: `✅ You're already authorized!\n\nYour authorization is active. You can now use the `/server` command or visit the web dashboard to transfer members.\n\nClick below to authorize again if you want to refresh your authorization:\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
+        ephemeral: true,
+      });
+    } else {
+      await interaction.reply({
+        content: `✅ **Authorize the bot to transfer members**\n\nClick the button below to authorize with Discord. This grants the bot permission to add you to other servers you authorize.\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
+        ephemeral: true,
+      });
+    }
   } catch (error) {
     console.error('Error handling authorize command:', error);
     await interaction.reply({
@@ -153,8 +162,17 @@ async function handleServerCommand(interaction: ChatInputCommandInteraction) {
   // Check if user has authorized
   const userToken = await storage.getOauthToken(interaction.user.id);
   if (!userToken) {
+    // Get the OAuth redirect URI for the authorization link
+    const redirectUri = getOAuthRedirectUri();
+    const authUrl = new URL('https://discord.com/api/oauth2/authorize');
+    authUrl.searchParams.set('client_id', process.env.DISCORD_CLIENT_ID!);
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('scope', 'identify guilds.join');
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('prompt', 'consent');
+
     await interaction.reply({
-      content: '❌ You need to authorize the bot first. Please visit the web dashboard to authorize.',
+      content: `❌ You need to authorize the bot first!\n\n[🔗 Click here to authorize](${authUrl.toString()})`,
       ephemeral: true,
     });
     return;
