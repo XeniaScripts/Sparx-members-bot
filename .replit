@@ -49,3 +49,4 @@ integrations = ["javascript_database:1.0.0"]
 
 [userenv.shared]
 VITE_DISCORD_CLIENT_ID = "${DISCORD_CLIENT_ID}"
+DISCORD_REDIRECT_URI = "https://3ae3c596-c8e7-420b-9b85-1778c3d66da3-00-3ldjf0vn4e33z.spock.replit.dev/auth/callback"
