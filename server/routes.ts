@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { initializeBot, discordClient, getGuildInfo, addMemberToGuild } from "./discord-bot";
+import { initializeBot, discordClient, getGuildInfo, addMemberToGuild, getOAuthRedirectUri } from "./discord-bot";
 import type { TransferProgress, TransferMemberResult } from "@shared/schema";
 import session from "express-session";
 import ConnectPgSimple from "connect-pg-simple";
@@ -38,13 +38,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: "Missing authorization code" });
       }
 
-      // Generate redirect URI - must match Discord OAuth app settings exactly
-      let redirectUri: string;
-      if (process.env.NODE_ENV === 'production') {
-        redirectUri = `${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/auth/callback`;
-      } else {
-        redirectUri = `http://localhost:5000/auth/callback`;
-      }
+      // Get the OAuth redirect URI (must match Discord OAuth app settings exactly)
+      const redirectUri = getOAuthRedirectUri();
 
       console.log(`[OAuth] Exchanging code for tokens, redirect_uri: ${redirectUri}`);
 
@@ -133,13 +128,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
 
     try {
-      // Exchange code for tokens
-      let redirectUri: string;
-      if (process.env.NODE_ENV === 'production') {
-        redirectUri = `${process.env.BASE_URL || req.protocol + '://' + req.get('host')}/auth/callback`;
-      } else {
-        redirectUri = `http://localhost:5000/auth/callback`;
-      }
+      // Get the OAuth redirect URI (must match Discord OAuth app settings exactly)
+      const redirectUri = getOAuthRedirectUri();
 
       console.log(`[OAuth] GET callback, redirect_uri: ${redirectUri}`);
 

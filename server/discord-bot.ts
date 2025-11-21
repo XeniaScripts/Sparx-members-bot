@@ -9,6 +9,21 @@ if (!process.env.DISCORD_CLIENT_ID) {
   throw new Error('DISCORD_CLIENT_ID is required');
 }
 
+// Helper to get the correct OAuth redirect URI
+export function getOAuthRedirectUri(): string {
+  // If explicitly set, use it
+  if (process.env.DISCORD_REDIRECT_URI) {
+    return process.env.DISCORD_REDIRECT_URI;
+  }
+  
+  // Otherwise, use default based on environment
+  if (process.env.NODE_ENV === 'production') {
+    return process.env.BASE_URL ? `${process.env.BASE_URL}/auth/callback` : 'https://your-domain.repl.co/auth/callback';
+  }
+  
+  return 'http://localhost:5000/auth/callback';
+}
+
 // Create Discord bot client
 export const discordClient = new Client({
   intents: [
@@ -74,19 +89,17 @@ export async function initializeBot() {
 // Handle /authorize command
 async function handleAuthorizeCommand(interaction: ChatInputCommandInteraction) {
   try {
-    // Generate OAuth URL - use localhost for dev, production domain for prod
-    let baseUrl = 'http://localhost:5000';
-    if (process.env.NODE_ENV === 'production') {
-      // Use the production domain from environment or default
-      baseUrl = process.env.BASE_URL || 'https://your-domain.repl.co';
-    }
+    // Get the OAuth redirect URI (must match Discord app settings)
+    const redirectUri = getOAuthRedirectUri();
 
     const authUrl = new URL('https://discord.com/api/oauth2/authorize');
     authUrl.searchParams.set('client_id', process.env.DISCORD_CLIENT_ID!);
     authUrl.searchParams.set('response_type', 'code');
     authUrl.searchParams.set('scope', 'identify guilds.join');
-    authUrl.searchParams.set('redirect_uri', `${baseUrl}/auth/callback`);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('prompt', 'consent');
+    
+    console.log(`[Discord] Generated auth URL with redirect_uri: ${redirectUri}`);
 
     await interaction.reply({
       content: `✅ **Authorize the bot to transfer members**\n\nClick the button below to authorize with Discord. This grants the bot permission to add you to other servers you authorize.\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
