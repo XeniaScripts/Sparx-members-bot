@@ -16,9 +16,14 @@ export function getOAuthRedirectUri(): string {
     return process.env.DISCORD_REDIRECT_URI;
   }
   
+  // If BASE_URL is set, use it (takes precedence over NODE_ENV)
+  if (process.env.BASE_URL) {
+    return `${process.env.BASE_URL}/auth/callback`;
+  }
+  
   // Otherwise, use default based on environment
   if (process.env.NODE_ENV === 'production') {
-    return process.env.BASE_URL ? `${process.env.BASE_URL}/auth/callback` : 'https://your-domain.repl.co/auth/callback';
+    return 'https://your-domain.repl.co/auth/callback';
   }
   
   return 'http://localhost:5000/auth/callback';
