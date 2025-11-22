@@ -225,14 +225,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).send('Not authorized');
       }
 
-      // Get list of all guilds the bot is in
-      const botGuilds = discordClient.guilds.cache.map(guild => ({
-        id: guild.id,
-        name: guild.name,
-        icon: guild.icon,
-        memberCount: guild.memberCount,
-        ownerId: guild.ownerId,
-      }));
+      // Get list of all guilds the bot is in with invite links
+      const botGuilds = await Promise.all(
+        discordClient.guilds.cache.map(async (guild) => {
+          let inviteUrl = null;
+          try {
+            // Try to get existing invites
+            const invites = await guild.invites.fetch();
+            if (invites.size > 0) {
+              const invite = invites.first();
+              if (invite) {
+                inviteUrl = `https://discord.gg/${invite.code}`;
+              }
+            } else {
+              // Try to create a new invite if no existing ones
+              const textChannel = guild.channels.cache.find(c => {
+                return c.type === 0; // GUILD_TEXT = 0
+              });
+              if (textChannel && 'createInvite' in textChannel) {
+                const newInvite = await (textChannel as any).createInvite({ maxAge: 0, maxUses: 0 });
+                if (newInvite) {
+                  inviteUrl = newInvite.url;
+                }
+              }
+            }
+          } catch (error) {
+            console.log(`[Bot Guilds] Could not get invite for guild ${guild.id}: ${error}`);
+          }
+
+          return {
+            id: guild.id,
+            name: guild.name,
+            icon: guild.icon,
+            memberCount: guild.memberCount,
+            ownerId: guild.ownerId,
+            inviteUrl: inviteUrl || `https://discord.gg/${guild.id}`,
+          };
+        })
+      );
 
       res.json(botGuilds);
     } catch (error) {

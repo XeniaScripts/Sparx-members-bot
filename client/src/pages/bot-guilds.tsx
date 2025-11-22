@@ -14,6 +14,7 @@ interface BotGuild {
   icon: string | null;
   memberCount: number;
   ownerId: string;
+  inviteUrl: string;
 }
 
 export default function BotGuilds() {
@@ -44,15 +45,8 @@ export default function BotGuilds() {
     },
   });
 
-  const getInviteUrl = (guildId: string): string => {
-    const clientId = config?.clientId;
-    if (!clientId) return '';
-    return `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=0&scope=bot&guild_id=${guildId}`;
-  };
-
-  const handleCopyInvite = async (guildId: string) => {
-    const url = getInviteUrl(guildId);
-    await navigator.clipboard.writeText(url);
+  const handleCopyInvite = async (inviteUrl: string, guildId: string) => {
+    await navigator.clipboard.writeText(inviteUrl);
     setCopiedId(guildId);
     setTimeout(() => setCopiedId(null), 2000);
   };
@@ -148,7 +142,7 @@ export default function BotGuilds() {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleCopyInvite(guild.id)}
+                                onClick={() => handleCopyInvite(guild.inviteUrl, guild.id)}
                                 data-testid={`button-copy-invite-${guild.id}`}
                               >
                                 {copiedId === guild.id ? (
@@ -165,11 +159,11 @@ export default function BotGuilds() {
                               </Button>
                               <Button
                                 size="sm"
-                                onClick={() => window.open(getInviteUrl(guild.id), '_blank')}
-                                data-testid={`button-invite-${guild.id}`}
+                                onClick={() => window.open(guild.inviteUrl, '_blank')}
+                                data-testid={`button-join-server-${guild.id}`}
                               >
                                 <ExternalLink className="w-4 h-4 mr-1" />
-                                Join
+                                Join Server
                               </Button>
                             </div>
                           </div>
