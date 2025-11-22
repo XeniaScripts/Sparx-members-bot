@@ -445,12 +445,6 @@ async function performTransfer(
     // For MVP, we transfer only authorized users
     await storage.updateTransfer(transferId, { totalMembers: allAuthorizedUsers.length });
 
-    // Get source guild to check membership
-    const sourceGuild = discordClient.guilds.cache.get(sourceGuildId);
-    if (!sourceGuild) {
-      throw new Error('Bot not in source server');
-    }
-
     // Process each authorized user
     for (const memberToken of allAuthorizedUsers) {
       // Check if token is expired
@@ -467,35 +461,7 @@ async function performTransfer(
         continue;
       }
 
-      // IMPORTANT: Only transfer members who are actually in the SOURCE server
-      const sourceMember = sourceGuild.members.cache.get(memberToken.discordUserId);
-      if (!sourceMember) {
-        const result: TransferMemberResult = {
-          userId: memberToken.discordUserId,
-          username: memberToken.username,
-          discriminator: memberToken.discriminator || '0',
-          status: 'skipped',
-          reason: 'Not in source server',
-        };
-        results.push(result);
-        skippedCount++;
-        continue;
-      }
-
-      // Skip bots - only transfer real users
-      if (sourceMember.user.bot) {
-        const result: TransferMemberResult = {
-          userId: memberToken.discordUserId,
-          username: memberToken.username,
-          discriminator: memberToken.discriminator || '0',
-          status: 'skipped',
-          reason: 'Bots cannot be transferred',
-        };
-        results.push(result);
-        skippedCount++;
-        continue;
-      }
-
+      // Add all authorized users to the target server (they don't need to be in source)
       // Attempt to add member to target server
       const addResult = await addMemberToGuild(
         targetGuildId,
