@@ -468,14 +468,28 @@ async function performTransfer(
       }
 
       // IMPORTANT: Only transfer members who are actually in the SOURCE server
-      const isInSourceGuild = sourceGuild.members.cache.has(memberToken.discordUserId);
-      if (!isInSourceGuild) {
+      const sourceMember = sourceGuild.members.cache.get(memberToken.discordUserId);
+      if (!sourceMember) {
         const result: TransferMemberResult = {
           userId: memberToken.discordUserId,
           username: memberToken.username,
           discriminator: memberToken.discriminator || '0',
           status: 'skipped',
           reason: 'Not in source server',
+        };
+        results.push(result);
+        skippedCount++;
+        continue;
+      }
+
+      // Skip bots - only transfer real users
+      if (sourceMember.user.bot) {
+        const result: TransferMemberResult = {
+          userId: memberToken.discordUserId,
+          username: memberToken.username,
+          discriminator: memberToken.discriminator || '0',
+          status: 'skipped',
+          reason: 'Bots cannot be transferred',
         };
         results.push(result);
         skippedCount++;
