@@ -71,12 +71,11 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Free Members Bot CTA */}
-            <div className="space-y-2">
-              <p className="text-lg font-semibold text-primary">Free Members Bot</p>
-              <p className="text-sm text-muted-foreground">
-                Authorize to get started instantly
-              </p>
+            {/* Transfer Easily */}
+            <div className="pt-4">
+              <h2 className="text-6xl font-bold tracking-tight">
+                Transfer Easily
+              </h2>
             </div>
           </div>
         </div>
