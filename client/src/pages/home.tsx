@@ -71,9 +71,15 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Transfer Easily */}
-            <div className="pt-4">
-              <h2 className="text-6xl font-bold tracking-tight">
+            {/* Free Members Bot CTA */}
+            <div className="space-y-4">
+              <p className="text-lg font-semibold text-primary">Free Members Bot</p>
+              <p className="text-sm text-muted-foreground">
+                Authorize to get started instantly
+              </p>
+              
+              {/* Transfer Easily - Big */}
+              <h2 className="text-6xl font-bold tracking-tight pt-4">
                 Transfer Easily
               </h2>
             </div>
