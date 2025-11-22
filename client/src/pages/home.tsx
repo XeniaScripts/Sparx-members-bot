@@ -71,20 +71,12 @@ export default function Home() {
               </Button>
             </div>
 
-            {/* Trust Indicators */}
-            <div className="flex items-center justify-center gap-6 pt-8 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-primary" />
-                <span>Secure OAuth2</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-primary" />
-                <span>Instant Transfer</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-primary" />
-                <span>Bulk Operations</span>
-              </div>
+            {/* Free Members Bot CTA */}
+            <div className="space-y-2">
+              <p className="text-lg font-semibold text-primary">Free Members Bot</p>
+              <p className="text-sm text-muted-foreground">
+                Authorize to get started instantly
+              </p>
             </div>
           </div>
         </div>
@@ -227,6 +219,9 @@ export default function Home() {
           <p>
             By using Sparx Members, you agree to our{' '}
             <a href="/terms" className="text-primary hover-elevate">Terms of Service</a>
+          </p>
+          <p className="mt-3 text-xs">
+            If you deauthorize, you will not be able to use the bot and will have to reauthorize
           </p>
           <p className="mt-2">Powered by Discord OAuth2 API</p>
         </div>
