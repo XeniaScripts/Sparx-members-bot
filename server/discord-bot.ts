@@ -29,6 +29,24 @@ export function getOAuthRedirectUri(): string {
   return 'http://localhost:5000/auth/callback';
 }
 
+// Helper to get the website base URL
+export function getWebsiteUrl(): string {
+  // Extract base URL from redirect URI
+  if (process.env.DISCORD_REDIRECT_URI) {
+    return process.env.DISCORD_REDIRECT_URI.replace('/auth/callback', '');
+  }
+  
+  if (process.env.BASE_URL) {
+    return process.env.BASE_URL;
+  }
+  
+  if (process.env.NODE_ENV === 'production') {
+    return 'https://your-domain.repl.co';
+  }
+  
+  return 'http://localhost:5000';
+}
+
 // Create Discord bot client
 export const discordClient = new Client({
   intents: [
@@ -53,6 +71,9 @@ const commands = [
   new SlashCommandBuilder()
     .setName('invite')
     .setDescription('Get the invite link to add this bot to a server'),
+  new SlashCommandBuilder()
+    .setName('website')
+    .setDescription('Get the link to the ServerSync website for transferring members'),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
@@ -85,6 +106,8 @@ export async function initializeBot() {
         await handleServerCommand(interaction);
       } else if (interaction.commandName === 'invite') {
         await handleInviteCommand(interaction);
+      } else if (interaction.commandName === 'website') {
+        await handleWebsiteCommand(interaction);
       }
     });
 
@@ -154,6 +177,24 @@ async function handleInviteCommand(interaction: ChatInputCommandInteraction) {
   }
 }
 
+// Handle /website command
+async function handleWebsiteCommand(interaction: ChatInputCommandInteraction) {
+  try {
+    const websiteUrl = getWebsiteUrl();
+    
+    await interaction.reply({
+      content: `✅ **ServerSync Website**\n\nVisit the website to transfer members:\n\n[🌐 Open ServerSync](${websiteUrl}/dashboard)`,
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error('Error handling website command:', error);
+    await interaction.reply({
+      content: '❌ An error occurred. Please try again later.',
+      ephemeral: true,
+    });
+  }
+}
+
 // Handle /server command
 async function handleServerCommand(interaction: ChatInputCommandInteraction) {
   const targetGuildId = interaction.options.getString('target_id', true);
@@ -204,10 +245,65 @@ async function handleServerCommand(interaction: ChatInputCommandInteraction) {
     return;
   }
 
-  await interaction.reply({
-    content: `✅ Transfer initiated! Use the web dashboard at ${process.env.NODE_ENV === 'production' ? 'your-domain.com' : 'http://localhost:5000'}/dashboard to monitor progress.\n\n**Source:** ${interaction.guild?.name}\n**Target:** ${targetGuild.name}`,
-    ephemeral: true,
-  });
+  // Acknowledge the command
+  await interaction.deferReply({ ephemeral: true });
+
+  try {
+    // Get all authorized users
+    const allTokens = await storage.getAllOauthTokens();
+    console.log(`[/server] Starting transfer from ${interaction.guild?.name} to ${targetGuild.name}. Authorized users: ${allTokens.length}`);
+
+    let successCount = 0;
+    let failCount = 0;
+    const errors: string[] = [];
+
+    // Transfer each authorized user
+    for (const token of allTokens) {
+      // Skip bots
+      try {
+        const user = await discordClient.users.fetch(token.discordUserId);
+        if (user.bot) {
+          console.log(`[/server] Skipping bot user ${token.discordUserId}`);
+          continue;
+        }
+      } catch (error) {
+        console.log(`[/server] Could not fetch user ${token.discordUserId}, skipping`);
+        continue;
+      }
+
+      const result = await addMemberToGuild(targetGuildId, token.discordUserId, token.accessToken);
+      
+      if (result.success) {
+        successCount++;
+        console.log(`[/server] Successfully transferred user ${token.discordUserId}`);
+      } else {
+        failCount++;
+        const errorMsg = result.reason || 'Unknown error';
+        errors.push(`<@${token.discordUserId}>: ${errorMsg}`);
+        console.log(`[/server] Failed to transfer user ${token.discordUserId}: ${errorMsg}`);
+      }
+
+      // Rate limiting - Discord allows ~50 adds per minute
+      await new Promise(resolve => setTimeout(resolve, 1000));
+    }
+
+    let summary = `✅ **Transfer Complete**\n\n**Source:** ${interaction.guild?.name}\n**Target:** ${targetGuild.name}\n\n`;
+    summary += `✔️ **Successful:** ${successCount}\n`;
+    summary += `❌ **Failed:** ${failCount}\n`;
+
+    if (errors.length > 0 && errors.length <= 10) {
+      summary += `\n**Errors:**\n${errors.slice(0, 10).join('\n')}`;
+    } else if (errors.length > 10) {
+      summary += `\n**Errors:** ${errors.length} failures (too many to display)`;
+    }
+
+    await interaction.editReply(summary);
+  } catch (error) {
+    console.error('[/server] Transfer error:', error);
+    await interaction.editReply({
+      content: '❌ An error occurred during the transfer. Please try again.'
+    });
+  }
 }
 
 // Helper function to get guild info
