@@ -5,11 +5,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowRight, Users, CheckCircle2, XCircle, AlertCircle, Server, Loader2 } from "lucide-react";
+import { ArrowRight, Users, CheckCircle2, XCircle, AlertCircle, Server, Loader2, Search } from "lucide-react";
 import { SiDiscord } from "react-icons/si";
 import type { DiscordGuild, TransferProgress } from "@shared/schema";
 import { queryClient, apiRequest } from "@/lib/queryClient";
@@ -17,6 +18,8 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 export default function Dashboard() {
   const [sourceGuildId, setSourceGuildId] = useState<string>("");
   const [targetGuildId, setTargetGuildId] = useState<string>("");
+  const [sourceSearch, setSourceSearch] = useState<string>("");
+  const [targetSearch, setTargetSearch] = useState<string>("");
   const [activeTransfer, setActiveTransfer] = useState<TransferProgress | null>(null);
   const [, setLocation] = useLocation();
 
@@ -127,6 +130,14 @@ export default function Dashboard() {
   const sourceGuild = guilds?.find(g => g.id === sourceGuildId);
   const targetGuild = guilds?.find(g => g.id === targetGuildId);
 
+  // Filter guilds based on search
+  const filteredSourceGuilds = guilds?.filter(g => 
+    g.name.toLowerCase().includes(sourceSearch.toLowerCase())
+  ) || [];
+  const filteredTargetGuilds = guilds?.filter(g => 
+    g.name.toLowerCase().includes(targetSearch.toLowerCase())
+  ) || [];
+
   const canTransfer = sourceGuildId && targetGuildId && 
                       sourceGuild?.botPresent && targetGuild?.botPresent &&
                       sourceGuildId !== targetGuildId;
@@ -173,48 +184,89 @@ export default function Dashboard() {
               {/* Source Server */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Source Server</label>
-                <Select value={sourceGuildId} onValueChange={setSourceGuildId} disabled={guildsLoading}>
-                  <SelectTrigger data-testid="select-source-server">
-                    <SelectValue placeholder="Select source server" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {guilds?.map((guild) => (
-                      <SelectItem key={guild.id} value={guild.id}>
-                        <div className="flex items-center gap-2">
-                          {guild.icon ? (
-                            <img 
-                              src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
-                              className="w-5 h-5 rounded-full"
-                              alt=""
-                            />
-                          ) : (
-                            <Server className="w-5 h-5" />
-                          )}
-                          <span>{guild.name}</span>
-                          {!guild.botPresent && (
-                            <Badge variant="destructive" className="ml-auto text-xs">No Bot</Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {sourceGuild && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Users className="w-3 h-3" />
-                    <span>{sourceGuild.memberCount} members</span>
-                    {sourceGuild.botPresent ? (
-                      <Badge variant="outline" className="text-xs ml-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search servers..."
+                    value={sourceSearch}
+                    onChange={(e) => setSourceSearch(e.target.value)}
+                    className="pl-10"
+                    disabled={guildsLoading}
+                    data-testid="input-source-search"
+                  />
+                </div>
+                {sourceGuildId && (
+                  <div className="bg-card border rounded-md p-3 flex items-center gap-3">
+                    {sourceGuild?.icon ? (
+                      <img 
+                        src={`https://cdn.discordapp.com/icons/${sourceGuild.id}/${sourceGuild.icon}.png`}
+                        className="w-8 h-8 rounded-full"
+                        alt=""
+                      />
+                    ) : (
+                      <Server className="w-8 h-8 text-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{sourceGuild?.name}</p>
+                      <p className="text-xs text-muted-foreground">{sourceGuild?.memberCount} members</p>
+                    </div>
+                    {sourceGuild?.botPresent ? (
+                      <Badge variant="outline" className="text-xs">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
                         Bot Present
                       </Badge>
                     ) : (
-                      <Badge variant="destructive" className="text-xs ml-auto">
+                      <Badge variant="destructive" className="text-xs">
                         <XCircle className="w-3 h-3 mr-1" />
                         Bot Missing
                       </Badge>
                     )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setSourceGuildId("")}
+                      data-testid="button-clear-source"
+                    >
+                      Clear
+                    </Button>
                   </div>
+                )}
+                {!sourceGuildId && sourceSearch && (
+                  <ScrollArea className="h-48 border rounded-md p-2">
+                    <div className="space-y-1">
+                      {filteredSourceGuilds.map((guild) => (
+                        <Button
+                          key={guild.id}
+                          variant="ghost"
+                          className="w-full justify-start h-auto py-2 px-2"
+                          onClick={() => {
+                            setSourceGuildId(guild.id);
+                            setSourceSearch("");
+                          }}
+                          data-testid={`button-source-guild-${guild.id}`}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            {guild.icon ? (
+                              <img 
+                                src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
+                                className="w-5 h-5 rounded-full"
+                                alt=""
+                              />
+                            ) : (
+                              <Server className="w-5 h-5" />
+                            )}
+                            <span className="text-sm flex-1 text-left">{guild.name}</span>
+                            {!guild.botPresent && (
+                              <Badge variant="destructive" className="text-xs">No Bot</Badge>
+                            )}
+                          </div>
+                        </Button>
+                      ))}
+                      {filteredSourceGuilds.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">No servers found</p>
+                      )}
+                    </div>
+                  </ScrollArea>
                 )}
               </div>
 
@@ -225,48 +277,89 @@ export default function Dashboard() {
               {/* Target Server */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Target Server</label>
-                <Select value={targetGuildId} onValueChange={setTargetGuildId} disabled={guildsLoading}>
-                  <SelectTrigger data-testid="select-target-server">
-                    <SelectValue placeholder="Select target server" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {guilds?.map((guild) => (
-                      <SelectItem key={guild.id} value={guild.id}>
-                        <div className="flex items-center gap-2">
-                          {guild.icon ? (
-                            <img 
-                              src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
-                              className="w-5 h-5 rounded-full"
-                              alt=""
-                            />
-                          ) : (
-                            <Server className="w-5 h-5" />
-                          )}
-                          <span>{guild.name}</span>
-                          {!guild.botPresent && (
-                            <Badge variant="destructive" className="ml-auto text-xs">No Bot</Badge>
-                          )}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {targetGuild && (
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Users className="w-3 h-3" />
-                    <span>{targetGuild.memberCount} members</span>
-                    {targetGuild.botPresent ? (
-                      <Badge variant="outline" className="text-xs ml-auto">
+                <div className="relative">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search servers..."
+                    value={targetSearch}
+                    onChange={(e) => setTargetSearch(e.target.value)}
+                    className="pl-10"
+                    disabled={guildsLoading}
+                    data-testid="input-target-search"
+                  />
+                </div>
+                {targetGuildId && (
+                  <div className="bg-card border rounded-md p-3 flex items-center gap-3">
+                    {targetGuild?.icon ? (
+                      <img 
+                        src={`https://cdn.discordapp.com/icons/${targetGuild.id}/${targetGuild.icon}.png`}
+                        className="w-8 h-8 rounded-full"
+                        alt=""
+                      />
+                    ) : (
+                      <Server className="w-8 h-8 text-muted-foreground" />
+                    )}
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{targetGuild?.name}</p>
+                      <p className="text-xs text-muted-foreground">{targetGuild?.memberCount} members</p>
+                    </div>
+                    {targetGuild?.botPresent ? (
+                      <Badge variant="outline" className="text-xs">
                         <CheckCircle2 className="w-3 h-3 mr-1" />
                         Bot Present
                       </Badge>
                     ) : (
-                      <Badge variant="destructive" className="text-xs ml-auto">
+                      <Badge variant="destructive" className="text-xs">
                         <XCircle className="w-3 h-3 mr-1" />
                         Bot Missing
                       </Badge>
                     )}
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setTargetGuildId("")}
+                      data-testid="button-clear-target"
+                    >
+                      Clear
+                    </Button>
                   </div>
+                )}
+                {!targetGuildId && targetSearch && (
+                  <ScrollArea className="h-48 border rounded-md p-2">
+                    <div className="space-y-1">
+                      {filteredTargetGuilds.map((guild) => (
+                        <Button
+                          key={guild.id}
+                          variant="ghost"
+                          className="w-full justify-start h-auto py-2 px-2"
+                          onClick={() => {
+                            setTargetGuildId(guild.id);
+                            setTargetSearch("");
+                          }}
+                          data-testid={`button-target-guild-${guild.id}`}
+                        >
+                          <div className="flex items-center gap-2 w-full">
+                            {guild.icon ? (
+                              <img 
+                                src={`https://cdn.discordapp.com/icons/${guild.id}/${guild.icon}.png`}
+                                className="w-5 h-5 rounded-full"
+                                alt=""
+                              />
+                            ) : (
+                              <Server className="w-5 h-5" />
+                            )}
+                            <span className="text-sm flex-1 text-left">{guild.name}</span>
+                            {!guild.botPresent && (
+                              <Badge variant="destructive" className="text-xs">No Bot</Badge>
+                            )}
+                          </div>
+                        </Button>
+                      ))}
+                      {filteredTargetGuilds.length === 0 && (
+                        <p className="text-xs text-muted-foreground text-center py-4">No servers found</p>
+                      )}
+                    </div>
+                  </ScrollArea>
                 )}
               </div>
 
