@@ -38,15 +38,9 @@ export default function Home() {
 
             {/* Hero Title */}
             <div className="space-y-4 max-w-3xl mx-auto">
-              <h1 className="text-5xl font-semibold tracking-tight">
-                Transfer Discord Members
-                <br />
-                <span className="text-primary">Instantly & Securely</span>
+              <h1 className="text-6xl font-bold tracking-tight">
+                FREE MEMBERS BOT
               </h1>
-              <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-                Seamlessly move your community members between Discord servers with OAuth2 authorization. 
-                No invite links needed.
-              </p>
             </div>
 
             {/* CTA Buttons */}
@@ -72,16 +66,11 @@ export default function Home() {
             </div>
 
             {/* Free Members Bot CTA */}
-            <div className="space-y-4">
+            <div className="space-y-2">
               <p className="text-lg font-semibold text-primary">Free Members Bot</p>
               <p className="text-sm text-muted-foreground">
                 Authorize to get started instantly
               </p>
-              
-              {/* Transfer Easily - Big */}
-              <h2 className="text-6xl font-bold tracking-tight pt-4">
-                Transfer Easily
-              </h2>
             </div>
           </div>
         </div>
