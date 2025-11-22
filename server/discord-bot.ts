@@ -110,7 +110,7 @@ async function handleAuthorizeCommand(interaction: ChatInputCommandInteraction) 
     const existingToken = await storage.getOauthToken(interaction.user.id);
     if (existingToken) {
       await interaction.reply({
-        content: `✅ You're already authorized!\n\nYour authorization is active. You can now use the `/server` command or visit the web dashboard to transfer members.\n\nClick below to authorize again if you want to refresh your authorization:\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
+        content: `✅ You're already authorized!\n\nYour authorization is active. You can now use the **server** command or visit the web dashboard to transfer members.\n\nClick below to authorize again if you want to refresh your authorization:\n\n[🔗 Authorize with Discord](${authUrl.toString()})`,
         ephemeral: true,
       });
     } else {
