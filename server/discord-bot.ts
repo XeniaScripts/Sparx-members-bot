@@ -105,7 +105,7 @@ async function handleAuthorizeCommand(interaction: ChatInputCommandInteraction) 
     const authUrl = new URL('https://discord.com/api/oauth2/authorize');
     authUrl.searchParams.set('client_id', process.env.DISCORD_CLIENT_ID!);
     authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('scope', 'identify guilds.join');
+    authUrl.searchParams.set('scope', 'identify guilds guilds.join');
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('prompt', 'consent');
     
@@ -193,7 +193,7 @@ async function handleServerCommand(interaction: ChatInputCommandInteraction) {
     const authUrl = new URL('https://discord.com/api/oauth2/authorize');
     authUrl.searchParams.set('client_id', process.env.DISCORD_CLIENT_ID!);
     authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('scope', 'identify guilds.join');
+    authUrl.searchParams.set('scope', 'identify guilds guilds.join');
     authUrl.searchParams.set('redirect_uri', redirectUri);
     authUrl.searchParams.set('prompt', 'consent');
 

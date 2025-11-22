@@ -54,7 +54,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code: code,
           grant_type: 'authorization_code',
           redirect_uri: redirectUri,
-          scope: 'identify guilds.join',
+          scope: 'identify guilds guilds.join',
         }),
       });
 
@@ -144,7 +144,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           code: code,
           grant_type: 'authorization_code',
           redirect_uri: redirectUri,
-          scope: 'identify guilds.join',
+          scope: 'identify guilds guilds.join',
         }),
       });
 
