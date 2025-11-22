@@ -194,8 +194,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log(`[OAuth] Successfully authorized user ${userData.username} (${userData.id})`);
 
-      // Redirect to dashboard
-      res.redirect('/dashboard?authorized=true');
+      // Save session before redirecting
+      req.session.save((err) => {
+        if (err) {
+          console.error('[OAuth] Session save error:', err);
+          return res.status(500).send('Failed to save session');
+        }
+        // Redirect to dashboard
+        res.redirect('/dashboard?authorized=true');
+      });
     } catch (error) {
       console.error('[OAuth] GET callback error:', error);
       res.status(500).send('Internal server error: ' + String(error));
