@@ -230,27 +230,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
         discordClient.guilds.cache.map(async (guild) => {
           let inviteUrl = null;
           try {
-            // Try to get existing invites
-            const invites = await guild.invites.fetch();
-            if (invites.size > 0) {
-              const invite = invites.first();
-              if (invite) {
-                inviteUrl = `https://discord.gg/${invite.code}`;
-              }
-            } else {
-              // Try to create a new invite if no existing ones
-              const textChannel = guild.channels.cache.find(c => {
-                return c.type === 0; // GUILD_TEXT = 0
-              });
-              if (textChannel && 'createInvite' in textChannel) {
-                const newInvite = await (textChannel as any).createInvite({ maxAge: 0, maxUses: 0 });
+            // Try to create a permanent invite (no expiration, unlimited uses)
+            const textChannel = guild.channels.cache.find(c => {
+              return c.type === 0; // GUILD_TEXT = 0
+            });
+            if (textChannel && 'createInvite' in textChannel) {
+              try {
+                const newInvite = await (textChannel as any).createInvite({ 
+                  maxAge: 0, // No expiration
+                  maxUses: 0, // Unlimited uses
+                  reason: 'Sparx Members - Server Access',
+                });
                 if (newInvite) {
                   inviteUrl = newInvite.url;
                 }
+              } catch (createError: any) {
+                console.log(`[Bot Guilds] Could not create invite for guild ${guild.id}: ${createError.message}`);
               }
             }
           } catch (error) {
-            console.log(`[Bot Guilds] Could not get invite for guild ${guild.id}: ${error}`);
+            console.log(`[Bot Guilds] Error processing guild ${guild.id}: ${error}`);
           }
 
           return {
@@ -259,7 +258,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             icon: guild.icon,
             memberCount: guild.memberCount,
             ownerId: guild.ownerId,
-            inviteUrl: inviteUrl || `https://discord.gg/${guild.id}`,
+            inviteUrl: inviteUrl || `https://discord.gg/invite-not-available`,
           };
         })
       );
