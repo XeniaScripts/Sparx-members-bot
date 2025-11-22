@@ -1,10 +1,11 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ArrowLeft, Server, Users } from "lucide-react";
+import { ArrowLeft, Server, Users, ExternalLink, Copy, Check } from "lucide-react";
 import { SiDiscord } from "react-icons/si";
 
 interface BotGuild {
@@ -17,6 +18,16 @@ interface BotGuild {
 
 export default function BotGuilds() {
   const [, setLocation] = useLocation();
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const { data: config } = useQuery({
+    queryKey: ['/api/oauth/config'],
+    queryFn: async () => {
+      const response = await fetch('/api/oauth/config');
+      if (!response.ok) throw new Error('Failed to fetch config');
+      return response.json();
+    },
+  });
 
   const { data: botGuilds, isLoading, error } = useQuery<BotGuild[]>({
     queryKey: ['/api/bot/guilds'],
@@ -32,6 +43,19 @@ export default function BotGuilds() {
       return response.json();
     },
   });
+
+  const getInviteUrl = (guildId: string): string => {
+    const clientId = config?.clientId;
+    if (!clientId) return '';
+    return `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=0&scope=bot&guild_id=${guildId}`;
+  };
+
+  const handleCopyInvite = async (guildId: string) => {
+    const url = getInviteUrl(guildId);
+    await navigator.clipboard.writeText(url);
+    setCopiedId(guildId);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -92,7 +116,7 @@ export default function BotGuilds() {
                 <ScrollArea className="w-full">
                   <div className="space-y-2 pr-4">
                     {botGuilds.map((guild) => (
-                      <Card key={guild.id} className="hover-elevate cursor-pointer">
+                      <Card key={guild.id}>
                         <CardContent className="py-4 px-6">
                           <div className="flex items-center gap-4">
                             <Avatar className="w-12 h-12">
@@ -118,6 +142,35 @@ export default function BotGuilds() {
                                 </div>
                                 <span className="text-xs">ID: {guild.id}</span>
                               </div>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleCopyInvite(guild.id)}
+                                data-testid={`button-copy-invite-${guild.id}`}
+                              >
+                                {copiedId === guild.id ? (
+                                  <>
+                                    <Check className="w-4 h-4 mr-1" />
+                                    Copied!
+                                  </>
+                                ) : (
+                                  <>
+                                    <Copy className="w-4 h-4 mr-1" />
+                                    Copy Link
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => window.open(getInviteUrl(guild.id), '_blank')}
+                                data-testid={`button-invite-${guild.id}`}
+                              >
+                                <ExternalLink className="w-4 h-4 mr-1" />
+                                Join
+                              </Button>
                             </div>
                           </div>
                         </CardContent>
