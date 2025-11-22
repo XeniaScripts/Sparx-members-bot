@@ -249,6 +249,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).send('Not authorized');
       }
 
+      // Check if token is expired
+      if (new Date(token.expiresAt) < new Date()) {
+        console.error(`[Guilds] Token expired for user ${userId}`);
+        return res.status(401).json({ error: 'Token expired. Please re-authorize.' });
+      }
+
+      // Check if token has required scopes
+      const hasGuildsScope = token.scopes && token.scopes.includes('guilds');
+      if (!hasGuildsScope) {
+        console.error(`[Guilds] Missing 'guilds' scope for user ${userId}. Current scopes: ${token.scopes}`);
+        return res.status(401).json({ 
+          error: 'Authorization needs update. Please re-authorize to grant the guilds permission.' 
+        });
+      }
+
       // Get guilds from Discord API
       const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
         headers: {
@@ -257,7 +272,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       if (!guildsResponse.ok) {
-        return res.status(400).send('Failed to fetch guilds');
+        const errorData = await guildsResponse.text();
+        console.error(`[Guilds] Discord API error:`, {
+          status: guildsResponse.status,
+          statusText: guildsResponse.statusText,
+          error: errorData,
+          userId,
+          tokenExpires: token.expiresAt,
+        });
+        return res.status(400).json({ error: 'Failed to fetch guilds', details: errorData });
       }
 
       const guilds = await guildsResponse.json();

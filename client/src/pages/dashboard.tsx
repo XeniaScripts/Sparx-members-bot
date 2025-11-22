@@ -28,10 +28,13 @@ export default function Dashboard() {
         credentials: 'include', // Send session cookies
       });
       if (response.status === 401) {
-        setLocation('/');
-        throw new Error('Not authorized');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Not authorized');
       }
-      if (!response.ok) throw new Error('Failed to fetch guilds');
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Failed to fetch guilds');
+      }
       return response.json();
     },
   });
@@ -54,7 +57,35 @@ export default function Dashboard() {
 
   // Redirect if not authenticated
   if (guildsError) {
-    return null;
+    const errorMessage = (guildsError as Error).message || 'Unknown error';
+    const needsReauth = errorMessage.includes('Authorization needs update') || errorMessage.includes('re-authorize');
+    
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Card className="max-w-md w-full mx-4">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-destructive">
+              <AlertCircle className="w-5 h-5" />
+              {needsReauth ? 'Re-Authorization Required' : 'Error'}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {needsReauth 
+                ? 'Your authorization needs to be updated to include the guilds permission. Please re-authorize to continue.'
+                : errorMessage}
+            </p>
+            <Button 
+              className="w-full"
+              onClick={() => setLocation('/')}
+              data-testid="button-return-home"
+            >
+              Return Home
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Start transfer mutation
