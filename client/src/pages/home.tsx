@@ -31,9 +31,9 @@ export default function Home() {
         <div className="relative max-w-6xl mx-auto px-6 py-20">
           <div className="text-center space-y-8">
             {/* Logo/Brand */}
-            <div className="inline-flex items-center gap-3 bg-primary/10 border border-primary/20 rounded-lg px-6 py-3">
-              <SiDiscord className="w-8 h-8 text-primary" />
-              <span className="text-2xl font-semibold">ServerSync</span>
+            <div className="inline-flex items-center gap-2">
+              <SiDiscord className="w-12 h-12 text-primary" />
+              <span className="text-4xl font-bold">Sparx Members <span className="text-primary">⚡️</span></span>
             </div>
 
             {/* Hero Title */}
@@ -225,7 +225,7 @@ export default function Home() {
       <footer className="border-t py-8">
         <div className="max-w-6xl mx-auto px-6 text-center text-sm text-muted-foreground">
           <p>
-            By using ServerSync, you agree to our{' '}
+            By using Sparx Members, you agree to our{' '}
             <a href="/terms" className="text-primary hover-elevate">Terms of Service</a>
           </p>
           <p className="mt-2">Powered by Discord OAuth2 API</p>

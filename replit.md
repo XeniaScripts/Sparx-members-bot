@@ -1,4 +1,4 @@
-# ServerSync - Discord Member Transfer Bot
+# Sparx Members ⚡️ - Discord Member Transfer Bot
 
 A Discord bot that automatically transfers members between servers using OAuth2 authorization with the `guilds.join` scope.
 
@@ -100,6 +100,13 @@ This starts:
 - ✅ PostgreSQL session store with automatic cleanup
 - ✅ CSRF protection via session tokens
 
+## Discord Commands
+
+- `/authorize` - Get authorization link
+- `/website` - Get link to the Sparx Members website
+- `/server [target_id]` - Transfer members from current server to target
+- `/invite` - Get invite link to add bot to a server
+
 ## API Endpoints
 
 ### OAuth
@@ -136,16 +143,25 @@ npm run db:push
 
 ## User Flow
 
-1. User visits landing page
+### Website Flow
+1. User visits landing page (sparx.replit.dev)
 2. Clicks "Authorize with Discord"
-3. Redirected to Discord OAuth (grants `identify` and `guilds.join`)
+3. Redirected to Discord OAuth (grants `identify`, `guilds`, and `guilds.join`)
 4. Redirected back to `/auth/callback`
 5. Session created with user ID
-6. Redirected to dashboard
-7. Selects source and target servers
-8. Starts transfer
-9. Watches real-time progress
-10. Views transfer results
+6. Redirected to dashboard with searchable server interface
+7. Uses search to find and select source server
+8. Uses search to find and select target server
+9. Clicks "Start Transfer"
+10. Watches real-time progress with live updates
+11. Views transfer results with success/failure counts
+
+### Discord Command Flow
+1. User authorizes bot with `/authorize` command
+2. Uses `/server [target_id]` to initiate transfer from current server
+3. Bot automatically transfers all authorized members
+4. Shows real-time summary with results
+5. User can view detailed errors for any failures
 
 ## Limitations & Future Enhancements
 
