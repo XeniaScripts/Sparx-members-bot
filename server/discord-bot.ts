@@ -238,23 +238,31 @@ export async function addMemberToGuild(
   try {
     const guild = discordClient.guilds.cache.get(guildId);
     if (!guild) {
+      console.error(`[addMember] Bot not in guild ${guildId}`);
       return { success: false, reason: 'Bot not in target server' };
     }
 
     // Check if user is already in guild
     const existingMember = guild.members.cache.get(userId);
     if (existingMember) {
+      console.log(`[addMember] User ${userId} already in guild ${guildId}`);
       return { success: false, reason: 'Already in server' };
     }
 
     // Add member using OAuth token
+    console.log(`[addMember] Adding user ${userId} to guild ${guildId}`);
     await guild.members.add(userId, {
       accessToken: accessToken,
     });
 
+    console.log(`[addMember] Successfully added user ${userId} to guild ${guildId}`);
     return { success: true };
   } catch (error: any) {
-    console.error(`Error adding member ${userId} to guild ${guildId}:`, error);
+    console.error(`[addMember] Error adding member ${userId} to guild ${guildId}:`, {
+      code: error.code,
+      message: error.message,
+      status: error.status,
+    });
     
     if (error.code === 50007) {
       return { success: false, reason: 'Cannot send messages to this user' };

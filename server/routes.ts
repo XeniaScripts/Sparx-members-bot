@@ -348,8 +348,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
 
       // Start transfer in background
+      console.log(`[Transfer] Starting transfer ${transfer.id} from ${sourceGuildId} to ${targetGuildId}`);
       performTransfer(transfer.id, sourceGuildId, targetGuildId).catch(err => {
-        console.error('Transfer error:', err);
+        console.error('[Transfer] Background error:', err);
       });
 
       // Return initial progress from database
@@ -434,21 +435,23 @@ async function performTransfer(
   let failedCount = 0;
 
   try {
+    console.log(`[Transfer ${transferId}] Starting`);
     // Update status
     await storage.updateTransfer(transferId, { status: 'in_progress' });
 
-    // Get all users who have authorized the bot (since we can't fetch all guild members without privileged intent)
+    // Get all users who have authorized the bot
     const allAuthorizedUsers = await storage.getAllOauthTokens();
+    console.log(`[Transfer ${transferId}] Found ${allAuthorizedUsers.length} authorized users`);
     
-    // We can only transfer users who have authorized the bot
-    // In a production app, you'd need the GuildMembers intent to fetch all members
-    // For MVP, we transfer only authorized users
     await storage.updateTransfer(transferId, { totalMembers: allAuthorizedUsers.length });
 
     // Process each authorized user
     for (const memberToken of allAuthorizedUsers) {
+      console.log(`[Transfer ${transferId}] Processing ${memberToken.username} (${memberToken.discordUserId})`);
+      
       // Check if token is expired
       if (new Date(memberToken.expiresAt) < new Date()) {
+        console.log(`[Transfer ${transferId}] Token expired for ${memberToken.username}`);
         const result: TransferMemberResult = {
           userId: memberToken.discordUserId,
           username: memberToken.username,
@@ -461,13 +464,15 @@ async function performTransfer(
         continue;
       }
 
-      // Add all authorized users to the target server (they don't need to be in source)
-      // Attempt to add member to target server
+      // Add all authorized users to the target server
+      console.log(`[Transfer ${transferId}] Adding ${memberToken.username} to target guild ${targetGuildId}`);
       const addResult = await addMemberToGuild(
         targetGuildId,
         memberToken.discordUserId,
         memberToken.accessToken
       );
+
+      console.log(`[Transfer ${transferId}] Result for ${memberToken.username}: success=${addResult.success}, reason=${addResult.reason}`);
 
       const result: TransferMemberResult = {
         userId: memberToken.discordUserId,
@@ -491,6 +496,8 @@ async function performTransfer(
       await new Promise(resolve => setTimeout(resolve, 1000));
     }
 
+    console.log(`[Transfer ${transferId}] Completed - Success: ${successCount}, Skipped: ${skippedCount}, Failed: ${failedCount}`);
+    
     // Final update with all results
     await storage.updateTransfer(transferId, {
       status: 'completed',
@@ -501,7 +508,7 @@ async function performTransfer(
       completedAt: new Date(),
     });
   } catch (error: any) {
-    console.error('Transfer failed:', error);
+    console.error(`[Transfer ${transferId}] Failed:`, error);
     await storage.updateTransfer(transferId, {
       status: 'failed',
       errorMessage: error.message,
