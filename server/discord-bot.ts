@@ -73,7 +73,7 @@ const commands = [
     .setDescription('Get the invite link to add this bot to a server'),
   new SlashCommandBuilder()
     .setName('website')
-    .setDescription('Get the link to the ServerSync website for transferring members'),
+    .setDescription('Get the link to the Sparx Members Bot website for transferring members'),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
@@ -183,7 +183,7 @@ async function handleWebsiteCommand(interaction: ChatInputCommandInteraction) {
     const websiteUrl = getWebsiteUrl();
     
     await interaction.reply({
-      content: `✅ **ServerSync Website**\n\nVisit the website to transfer members:\n\n[🌐 Open ServerSync](${websiteUrl}/dashboard)`,
+      content: `✅ **Sparx Members Bot**\n\nVisit the website to transfer members:\n\n[🌐 Open Sparx Members Bot](${websiteUrl}/dashboard)`,
       ephemeral: true,
     });
   } catch (error) {

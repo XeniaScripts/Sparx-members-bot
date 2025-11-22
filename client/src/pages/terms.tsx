@@ -10,9 +10,9 @@ export default function Terms() {
       {/* Header */}
       <header className="border-b bg-card">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <SiDiscord className="w-6 h-6 text-primary" />
-            <span className="text-xl font-semibold">ServerSync</span>
+            <span className="text-xl font-bold">Sparx Members Bot <span className="text-primary">⚡️</span></span>
           </div>
           <Button 
             variant="ghost" 
@@ -38,7 +38,7 @@ export default function Terms() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>
-                By using ServerSync ("the Service"), you agree to be bound by these Terms of Service. 
+                By using Sparx Members Bot ("the Service"), you agree to be bound by these Terms of Service. 
                 If you do not agree to these terms, please do not use the Service.
               </p>
             </CardContent>
@@ -50,7 +50,7 @@ export default function Terms() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>
-                ServerSync is a Discord bot that facilitates the transfer of Discord server members 
+                Sparx Members Bot is a free Discord bot that facilitates the transfer of Discord server members 
                 from one server to another using Discord's OAuth2 API with the guilds.join scope.
               </p>
               <p>
@@ -71,7 +71,7 @@ export default function Terms() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>
-                When you authorize ServerSync, you grant the following permissions:
+                When you authorize Sparx Members Bot, you grant the following permissions:
               </p>
               <ul className="list-disc list-inside space-y-1 ml-4">
                 <li><strong>identify</strong> - Access your Discord username and user ID</li>
@@ -176,7 +176,7 @@ export default function Terms() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-muted-foreground">
               <p>
-                ServerSync and its operators shall not be liable for any damages arising from the use 
+                Sparx Members Bot and its operators shall not be liable for any damages arising from the use 
                 or inability to use the Service, including but not limited to failed transfers, 
                 data loss, or service interruptions.
               </p>
