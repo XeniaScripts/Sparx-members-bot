@@ -11,7 +11,7 @@ export default function Home() {
       const config = await response.json();
       
       const redirectUri = `${window.location.origin}/auth/callback`;
-      const scopes = 'identify guilds.join';
+      const scopes = 'identify guilds guilds.join';
       const authUrl = `https://discord.com/api/oauth2/authorize?client_id=${config.clientId}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent(scopes)}`;
       window.location.href = authUrl;
     } catch (error) {

@@ -255,14 +255,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Token expired. Please re-authorize.' });
       }
 
-      // Check if token has required scopes
-      const hasGuildsScope = token.scopes && token.scopes.includes('guilds');
-      if (!hasGuildsScope) {
-        console.error(`[Guilds] Missing 'guilds' scope for user ${userId}. Current scopes: ${token.scopes}`);
-        return res.status(401).json({ 
-          error: 'Authorization needs update. Please re-authorize to grant the guilds permission.' 
-        });
-      }
+      console.log(`[Guilds] Fetching guilds for user ${userId} with token scopes: ${token.scopes}`);
 
       // Get guilds from Discord API
       const guildsResponse = await fetch('https://discord.com/api/users/@me/guilds', {
