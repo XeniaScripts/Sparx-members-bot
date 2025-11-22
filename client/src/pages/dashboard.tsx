@@ -151,15 +151,25 @@ export default function Dashboard() {
             <SiDiscord className="w-7 h-7 text-primary" />
             <span className="text-xl font-bold">Sparx Members <span className="text-primary">⚡️</span></span>
           </div>
-          {user && (
-            <div className="flex items-center gap-3">
-              <Avatar className="w-8 h-8">
-                <AvatarImage src={`https://cdn.discordapp.com/avatars/${user.avatar}.png`} />
-                <AvatarFallback>{user.username[0]}</AvatarFallback>
-              </Avatar>
-              <span className="text-sm" data-testid="text-username">{user.username}</span>
-            </div>
-          )}
+          <div className="flex items-center gap-4">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setLocation('/bot-servers')}
+              data-testid="button-bot-servers"
+            >
+              Bot Servers
+            </Button>
+            {user && (
+              <div className="flex items-center gap-3">
+                <Avatar className="w-8 h-8">
+                  <AvatarImage src={`https://cdn.discordapp.com/avatars/${user.avatar}.png`} />
+                  <AvatarFallback>{user.username[0]}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm" data-testid="text-username">{user.username}</span>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 

@@ -216,6 +216,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Get bot's guilds
+  app.get("/api/bot/guilds", async (req, res) => {
+    try {
+      const userId = (req.session as any).discordUserId;
+      
+      if (!userId) {
+        return res.status(401).send('Not authorized');
+      }
+
+      // Get list of all guilds the bot is in
+      const botGuilds = discordClient.guilds.cache.map(guild => ({
+        id: guild.id,
+        name: guild.name,
+        icon: guild.icon,
+        memberCount: guild.memberCount,
+        ownerId: guild.ownerId,
+      }));
+
+      res.json(botGuilds);
+    } catch (error) {
+      console.error('Error fetching bot guilds:', error);
+      res.status(500).send('Internal server error');
+    }
+  });
+
   // Get current user info
   app.get("/api/user", async (req, res) => {
     try {
