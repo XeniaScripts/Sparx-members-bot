@@ -50,6 +50,9 @@ const commands = [
         .setDescription('Target server ID (enable Developer Mode in Discord to copy)')
         .setRequired(true)
     ),
+  new SlashCommandBuilder()
+    .setName('invite')
+    .setDescription('Get the invite link to add this bot to a server'),
 ].map(command => command.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(process.env.DISCORD_BOT_TOKEN);
@@ -80,6 +83,8 @@ export async function initializeBot() {
         await handleAuthorizeCommand(interaction);
       } else if (interaction.commandName === 'server') {
         await handleServerCommand(interaction);
+      } else if (interaction.commandName === 'invite') {
+        await handleInviteCommand(interaction);
       }
     });
 
@@ -121,6 +126,27 @@ async function handleAuthorizeCommand(interaction: ChatInputCommandInteraction) 
     }
   } catch (error) {
     console.error('Error handling authorize command:', error);
+    await interaction.reply({
+      content: '❌ An error occurred. Please try again later.',
+      ephemeral: true,
+    });
+  }
+}
+
+// Handle /invite command
+async function handleInviteCommand(interaction: ChatInputCommandInteraction) {
+  try {
+    const inviteUrl = new URL('https://discord.com/api/oauth2/authorize');
+    inviteUrl.searchParams.set('client_id', process.env.DISCORD_CLIENT_ID!);
+    inviteUrl.searchParams.set('permissions', '0');
+    inviteUrl.searchParams.set('scope', 'bot');
+    
+    await interaction.reply({
+      content: `✅ **Add the bot to a server**\n\nClick the link below to invite this bot to any server where you have permission to manage the server:\n\n[🔗 Invite Bot to Server](${inviteUrl.toString()})`,
+      ephemeral: true,
+    });
+  } catch (error) {
+    console.error('Error handling invite command:', error);
     await interaction.reply({
       content: '❌ An error occurred. Please try again later.',
       ephemeral: true,
